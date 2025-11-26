@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SARSA | Design Representation & Brokerage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Manrope:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           1. CSS VARIABLES & RESET
+           ========================================= */
+        :root {
+            --color-terracotta: #A0522D; /* Minas Earth Tone */
+            --color-slate: #2F4F4F; /* Dark Slate Grey */
+            --color-sand: #F5F1E6; /* Off-white background */
+            --color-white: #FFFFFF;
+            --color-text: #333333;
+            --color-text-light: #777777;
+            
+            --font-heading: 'Libre Baskerville', serif;
+            --font-body: 'Manrope', sans-serif;
+            
+            --container-width: 1200px;
+            --section-padding: 100px 0;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--color-sand);
+            color: var(--color-text);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: var(--font-heading);
+            color: var(--color-slate);
+            margin-bottom: 20px;
+            line-height: 1.3;
+        }
+
+        p {
+            margin-bottom: 20px;
+            color: var(--color-text-light);
+            font-size: 1.05rem;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+            transition: var(--transition);
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        /* =========================================
+           2. UTILITIES
+           ========================================= */
+        .container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 0 25px;
+        }
+
+        .text-center { text-align: center; }
+
+        .section-subtitle {
+            display: block;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            color: var(--color-terracotta);
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .section-title {
+            font-size: 2.8rem;
+            margin-bottom: 50px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 16px 36px;
+            background-color: var(--color-terracotta);
+            color: var(--color-white);
+            border: 1px solid var(--color-terracotta);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background-color: transparent;
+            color: var(--color-terracotta);
+        }
+
+        /* =========================================
+           3. HEADER
+           ========================================= */
+        header {
+            background-color: var(--color-sand);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            padding: 25px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .nav-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-slate);
+            letter-spacing: 1px;
+        }
+
+        .logo span {
+            color: var(--color-terracotta);
+            font-style: italic;
+        }
+
+        nav ul {
+            display: flex;
+            gap: 30px;
+        }
+
+        nav a {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--color-slate);
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            color: var(--color-terracotta);
+        }
+
+        /* =========================================
+           4. HERO SECTION
+           ========================================= */
+        .hero {
+            height: 100vh;
+            background: linear-gradient(to right, rgba(47, 79, 79, 0.9), rgba(47, 79, 79, 0.7)), url('https://images.unsplash.com/photo-1556228453-efd6c1ff04f6?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover;
+            display: flex;
+            align-items: center;
+            color: var(--color-white);
+        }
+
+        .hero-content {
+            max-width: 800px;
+        }
+
+        .hero h1 {
+            color: var(--color-white);
+            font-size: 4rem;
+            margin-bottom: 30px;
+        }
+
+        .hero p {
+            color: #dcdcdc;
+            font-size: 1.25rem;
+            margin-bottom: 40px;
+            max-width: 600px;
+            border-left: 3px solid var(--color-terracotta);
+            padding-left: 20px;
+        }
+
+        .hero .btn {
+            background-color: var(--color-terracotta);
+            border-color: var(--color-terracotta);
+        }
+
+        .hero .btn:hover {
+            background-color: transparent;
+            color: var(--color-white);
+        }
+
+        /* =========================================
+           5. ABOUT US
+           ========================================= */
+        .about {
+            padding: var(--section-padding);
+            background-color: var(--color-white);
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 70px;
+            align-items: center;
+        }
+
+        .about-img {
+            position: relative;
+        }
+
+        .about-img img {
+            border-radius: 2px;
+            box-shadow: 20px 20px 0 var(--color-terracotta);
+        }
+
+        .about-text h2 {
+            font-size: 2.5rem;
+        }
+
+        /* =========================================
+           6. SERVICES
+           ========================================= */
+        .services {
+            padding: var(--section-padding);
+            background-color: var(--color-sand);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .service-card {
+            background: var(--color-white);
+            padding: 50px 30px;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: var(--transition);
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            border-top: 4px solid var(--color-terracotta);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .service-icon {
+            font-size: 2rem;
+            color: var(--color-terracotta);
+            margin-bottom: 25px;
+            display: block;
+        }
+
+        .service-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+        }
+
+        /* =========================================
+           7. ADVANTAGES
+           ========================================= */
+        .advantages {
+            padding: var(--section-padding);
+            background-color: var(--color-slate);
+            color: var(--color-white);
+        }
+
+        .advantages .section-subtitle {
+            color: var(--color-terracotta);
+        }
+
+        .advantages h2, .advantages h3 {
+            color: var(--color-white);
+        }
+
+        .advantages p {
+            color: #aaa;
+        }
+
+        .adv-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 50px;
+        }
+
+        .adv-item {
+            padding-left: 20px;
+            border-left: 1px solid var(--color-terracotta);
+        }
+
+        .adv-item h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+
+        /* =========================================
+           8. PROCESS
+           ========================================= */
+        .process {
+            padding: var(--section-padding);
+            background-color: var(--color-white);
+        }
+
+        .process-steps {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 40px;
+            margin-top: 60px;
+        }
+
+        .step {
+            text-align: center;
+            position: relative;
+        }
+
+        .step-num {
+            font-family: var(--font-heading);
+            font-size: 3rem;
+            color: rgba(160, 82, 45, 0.2); /* Transparent Terracotta */
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+
+        .step-content {
+            position: relative;
+            z-index: 1;
+            padding-top: 20px;
+        }
+
+        .step h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+
+        /* =========================================
+           9. CONTACT
+           ========================================= */
+        .contact {
+            padding: var(--section-padding);
+            background-color: var(--color-sand);
+        }
+
+        .contact-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            background: var(--color-white);
+            padding: 60px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.05);
+        }
+
+        .contact-info h3 {
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+
+        .info-item {
+            margin-bottom: 30px;
+        }
+
+        .info-item h5 {
+            color: var(--color-terracotta);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .info-item p {
+            font-size: 1.1rem;
+            color: var(--color-slate);
+            font-family: var(--font-heading);
+            margin: 0;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background-color: #FAFAFA;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--color-terracotta);
+            background-color: #fff;
+        }
+
+        textarea {
+            height: 150px;
+            resize: vertical;
+        }
+
+        button[type="submit"] {
+            background-color: var(--color-slate);
+            color: #fff;
+            border: none;
+            padding: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        button[type="submit"]:hover {
+            background-color: var(--color-terracotta);
+        }
+
+        /* =========================================
+           10. FOOTER
+           ========================================= */
+        footer {
+            background-color: var(--color-slate);
+            color: #aaa;
+            padding: 50px 0;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        footer p {
+            margin: 0;
+        }
+
+        /* =========================================
+           RESPONSIVE
+           ========================================= */
+        @media (max-width: 900px) {
+            .hero h1 { font-size: 3rem; }
+            .about-grid, .contact-container, .adv-grid, .process-steps { grid-template-columns: 1fr; }
+            .nav-wrapper { flex-direction: column; gap: 20px; }
+            .hero p { border-left: none; padding-left: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="container nav-wrapper">
+            <div class="logo">SARSA <span>REPRESENTACOES</span></div>
+            <nav>
+                <ul>
+                    <li><a href="#about">The Agency</a></li>
+                    <li><a href="#services">Portfolio</a></li>
+                    <li><a href="#advantages">Why Sarsa</a></li>
+                    <li><a href="#process">Process</a></li>
+                    <li><a href="#contact">Contact</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container hero-content">
+            <h1>Brokerage of Design.<br>Intermediation of Style.</h1>
+            <p>Based in Belo Horizonte, SARSA bridges the gap between creative vision and commercial reality. We represent the finest design portfolios with the rigor of financial intermediation.</p>
+            <a href="#contact" class="btn">View Representation</a>
+        </div>
+    </section>
+
+    <section id="about" class="section-padding about">
+        <div class="container about-grid">
+            <div class="about-text">
+                <span class="section-subtitle">Our Identity</span>
+                <h2 class="section-title">Curating Value in Minas Gerais</h2>
+                <p>SARCA REPRESENTACOES E DESIGN LTDA (DBA: SARSA) is a premier commercial representation firm located in Belo Horizonte. While our roots are in the artistic tradition of Minas Gerais, our operation is built on the precision of securities and commodity contracts brokerage.</p>
+                <p>We treat design collections—furniture, lighting, and textiles—not merely as products, but as assets. Our role is to act as the intermediary between high-value manufacturers and the architects, developers, and retailers who shape the built environment.</p>
+                <p>Under the leadership of Alba Marcia Silva De Jesus Sampaio, we have established a reputation for reliability. We provide the market intelligence and contractual security usually reserved for financial sectors, applied to the world of aesthetic commerce.</p>
+            </div>
+            <div class="about-img">
+                <img src="https://images.unsplash.com/photo-1599694239236-410a56828522?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Belo Horizonte Architecture Detail">
+            </div>
+        </div>
+    </section>
+
+    <section id="services" class="section-padding services">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-subtitle">What We Do</span>
+                <h2 class="section-title">Intermediation Services</h2>
+            </div>
+            
+            <div class="services-grid">
+                <div class="service-card">
+                    <span class="service-icon">&#9878;</span> <h3>Design Brokerage</h3>
+                    <p>We negotiate contracts between large-scale buyers and design studios. We handle the terms, logistics, and pricing structures, ensuring a fair exchange of value similar to a commodities desk.</p>
+                </div>
+
+                <div class="service-card">
+                    <span class="service-icon">&#128188;</span> <h3>Commercial Representation</h3>
+                    <p>We serve as the exclusive regional voice for national and international brands. Our team manages territories, client relationships, and sales pipelines throughout Minas Gerais.</p>
+                </div>
+
+                <div class="service-card">
+                    <span class="service-icon">&#128200;</span> <h3>Market Valuation</h3>
+                    <p>We help manufacturers understand the worth of their collections in the local market. We provide analysis on pricing strategies and competitive positioning to maximize asset turnover.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="advantages" class="section-padding advantages">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-subtitle">Why Choose Sarsa</span>
+                <h2 class="section-title">The Strategic Edge</h2>
+            </div>
+
+            <div class="adv-grid">
+                <div class="adv-item">
+                    <h3>Mineiro Expertise</h3>
+                    <p>We understand the nuances of the Minas Gerais market. We know the key players in Belo Horizonte's architecture and retail sectors, opening doors that others cannot.</p>
+                </div>
+                <div class="adv-item">
+                    <h3>Contractual Rigor</h3>
+                    <p>Drawing from our industry classification in "Contracts Intermediation," we ensure every deal is legally sound and financially viable, protecting both the creator and the buyer.</p>
+                </div>
+                <div class="adv-item">
+                    <h3>Curated Portfolio</h3>
+                    <p>We do not represent everything. We carefully select brands that offer genuine value and design integrity, ensuring our reputation serves as a seal of quality.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="process" class="section-padding process">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-subtitle">Our Methodology</span>
+                <h2 class="section-title">The Brokerage Cycle</h2>
+            </div>
+
+            <div class="process-steps">
+                <div class="step">
+                    <div class="step-num">01</div>
+                    <div class="step-content">
+                        <h3>Asset Valuation</h3>
+                        <p>We assess the design product's potential in the local market, analyzing quality, supply chain reliability, and aesthetic relevance.</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-num">02</div>
+                    <div class="step-content">
+                        <h3>Strategic Placement</h3>
+                        <p>We identify the right partners—whether boutiques or construction firms—and position the product to maximize visibility and sales.</p>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-num">03</div>
+                    <div class="step-content">
+                        <h3>Transaction Management</h3>
+                        <p>We oversee the sales process from order to delivery, ensuring seamless execution and long-term relationship building.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact" class="section-padding contact">
+        <div class="container">
+            <div class="text-center">
+                <span class="section-subtitle">Inquiries</span>
+                <h2 class="section-title">Initiate Collaboration</h2>
+            </div>
+
+            <div class="contact-container">
+                <div class="contact-info">
+                    <h3>Get in Touch</h3>
+                    <p style="margin-bottom: 40px;">Whether you are a manufacturer seeking representation or a buyer looking for design assets, we are ready to assist.</p>
+                    
+                    <div class="info-item" style="margin-bottom: 30px;">
+                        <h5 style="color: var(--color-terracotta); font-size: 0.9rem; text-transform: uppercase;">Headquarters</h5>
+                        <p style="font-family: var(--font-heading); color: var(--color-slate);">BELO HORIZONTE, MINAS GERAIS<br>Brazil</p>
+                    </div>
+
+                    <div class="info-item" style="margin-bottom: 30px;">
+                        <h5 style="color: var(--color-terracotta); font-size: 0.9rem; text-transform: uppercase;">Electronic Mail</h5>
+                        <p style="font-family: var(--font-heading); color: var(--color-slate);">info@teamofdesignrepresentacao.info</p>
+                    </div>
+
+                    <div class="info-item">
+                        <h5 style="color: var(--color-terracotta); font-size: 0.9rem; text-transform: uppercase;">Principal</h5>
+                        <p style="font-family: var(--font-heading); color: var(--color-slate);">Alba Marcia Silva De Jesus Sampaio</p>
+                    </div>
+                </div>
+
+                <div class="contact-form">
+                    <form action="#" method="POST">
+                        <input type="text" placeholder="Your Name / Company" required>
+                        <input type="email" placeholder="Email Address" required>
+                        <input type="text" placeholder="Interest (Representation / Buying)">
+                        <textarea placeholder="Tell us about your project or products..."></textarea>
+                        <button type="submit">Send Message</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 SARCA REPRESENTACOES E DESIGN LTDA. All Rights Reserved.</p>
+            <p style="font-size: 0.8rem; margin-top: 10px; opacity: 0.6;">Securities and Commodity Contracts Intermediation and Brokerage</p>
+        </div>
+    </footer>
+
+</body>
+</html>
